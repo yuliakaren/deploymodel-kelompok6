@@ -1,38 +1,38 @@
-from flask import Flask, render_template, request, send_from_directory
-from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array, load_img
-from tensorflow import expand_dims
 import numpy as np
-import os
+from flask import Flask, request, jsonify, render_template
+import pickle
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+from sklearn import metrics
+from sklearn.metrics import confusion_matrix
+import statsmodels.api as sm
+from sklearn import linear_model
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = './static/uploads/'
-model = load_model('model.h5')
+model = pickle.load(open('model.pkl', 'rb'))
 
-class_dict = {0: 'Cat (Kucing)', 1: 'Dog (Anjing)'}
-
-def predict_label(img_path):
-    loaded_img = load_img(img_path, target_size=(256, 256))
-    img_array = img_to_array(loaded_img) / 255.0
-    img_array = expand_dims(img_array, 0)
-    predicted_bit = np.round(model.predict(img_array)[0][0]).astype('int')
-    return class_dict[predicted_bit]
-
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    if request.method == 'POST':
-        if request.files:
-            image = request.files['image']
-            img_path = os.path.join(app.config['UPLOAD_FOLDER'], image.filename)
-            image.save(img_path)
-            prediction = predict_label(img_path)
-            return render_template('index.html', uploaded_image=image.filename, prediction=prediction)
-
+@app.route('/')
+def home():
     return render_template('index.html')
 
-@app.route('/display/<filename>')
-def send_uploaded_image(filename=''):
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+@app.route('/predict',methods=['POST'])
+def predict():
 
-if __name__ == '__main__':
+    int_features = [int(x) for x in request.form.values()]
+    final_features = [np.array(int_features)]
+    prediction_new = new_model.predict(final_features)
+    output = round(prediction_new[0], 2)
+
+    return render_template("index.html", prediction_text='Your predicted annual Healthcare Expense is $ {}'.format(output))
+
+@app.route('/results',methods=['POST'])
+def results():
+
+    data = request.get_json(force=True)
+    prediction_new = new_model.predict([np.array(list(data.values()))])
+
+    output = prediction_new[0]
+    return jsonify(output)
+
+if __name__ == "__main__":
     app.run(debug=True)
